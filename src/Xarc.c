@@ -11,12 +11,12 @@ int main() {
 
   if (dataStream != NULL) {
     // Successfully received a byte stream; print the total size
-    printf("Total size of the data stream: %zu bytes\n", totalSize);
 
     // Print the entire data stream in hexadecimal format
     for (size_t i = 0; i < totalSize; i++) {
-      // printf("%02X ", (unsigned char)dataStream[i]);
+      printf("%02X ", (unsigned char)dataStream[i]);
     }
+    printf("Total size of the data stream: %zu bytes\n", totalSize);
     printf("\n");
 
     free(dataStream); // Free the allocated byte stream
