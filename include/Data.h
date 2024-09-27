@@ -1,0 +1,7 @@
+#ifndef DATA_H
+#define DATA_H
+
+#include <stdio.h>
+char *GenerateDataStream(char *path, size_t *totalSize);
+
+#endif
