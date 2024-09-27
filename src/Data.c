@@ -77,27 +77,6 @@ char *GenerateDataStream(char *path, size_t *totalsize) {
         free(subStream);
       }
     } else {
-      header->mode = fileattr.st_mode;
-      strcpy(header->filename, filename);
-      strcpy(header->filepath, fullPath);
-      header->headerSize = sizeof(FileHeader) + pathLength;
-
-      char *newByteStream =
-          realloc(byteStream, byteStreamSize + header->headerSize);
-      if (newByteStream == NULL) {
-        perror("Reallocation failed");
-        free(byteStream);
-        free(directoryEntries);
-        free(header);
-        free(fullPath);
-        return NULL;
-      }
-      byteStream = newByteStream;
-
-      memcpy(byteStream + byteStreamSize, header, header->headerSize);
-      byteStreamSize += header->headerSize;
-      free(header);
-
       FILE *file = fopen(fullPath, "rb");
       if (!file) {
         perror("fopen");
@@ -109,14 +88,51 @@ char *GenerateDataStream(char *path, size_t *totalsize) {
       fseek(file, 0, SEEK_END);
       size_t fileSize = ftell(file);
       fseek(file, 0, SEEK_SET);
+
+      size_t pathLength = strlen(fullPath) + 1;
+      FileHeader *header = malloc(sizeof(FileHeader) + pathLength);
+      if (header == NULL) {
+        perror("Unable to allocate memory for header");
+        fclose(file);
+        free(fullPath);
+        free(directoryEntries);
+        return NULL;
+      }
+
+      header->mode = fileattr.st_mode;
+      strcpy(header->filename, filename);
+      strcpy(header->filepath, fullPath);
+      header->headerSize = sizeof(FileHeader) + pathLength;
+
+      header->fileOffset = byteStreamSize + header->headerSize + fileSize;
+
+      char *newByteStream =
+          realloc(byteStream, byteStreamSize + header->headerSize);
+      if (newByteStream == NULL) {
+        perror("Reallocation failed");
+        free(byteStream);
+        free(header);
+        free(fullPath);
+        fclose(file);
+        free(directoryEntries);
+        return NULL;
+      }
+      byteStream = newByteStream;
+
+      memcpy(byteStream + byteStreamSize, header, header->headerSize);
+      byteStreamSize += header->headerSize;
+
+      free(header);
+
       char *fileContent = malloc(fileSize);
       if (!fileContent) {
         perror("Unable to allocate memory for file content");
         fclose(file);
-        free(directoryEntries);
         free(fullPath);
+        free(directoryEntries);
         return NULL;
       }
+
       fread(fileContent, 1, fileSize, file);
       fclose(file);
 
@@ -124,14 +140,16 @@ char *GenerateDataStream(char *path, size_t *totalsize) {
       if (newByteFileStream == NULL) {
         perror("Reallocation failed");
         free(byteStream);
-        free(directoryEntries);
         free(fileContent);
         free(fullPath);
+        free(directoryEntries);
         return NULL;
       }
       byteStream = newByteFileStream;
+
       memcpy(byteStream + byteStreamSize, fileContent, fileSize);
       byteStreamSize += fileSize;
+
       free(fileContent);
     }
     free(fullPath);
