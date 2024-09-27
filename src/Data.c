@@ -9,6 +9,7 @@
 // Use NULL to check for errors in when using this function
 char *GenerateDataStream(char *path, size_t *totalsize) {
   struct dirent **directoryEntries;
+  printf("%s\n", path);
   int directoryEntriesAmount =
       scandir(path, &directoryEntries, NULL, alphasort);
   if (directoryEntriesAmount < 0) {
@@ -160,4 +161,3 @@ char *GenerateDataStream(char *path, size_t *totalsize) {
   *totalsize = byteStreamSize;
   return byteStream;
 }
-
