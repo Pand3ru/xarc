@@ -8,9 +8,8 @@
 
 // Use NULL to check for errors in when using this function
 char *GenerateDataStream(char *path, size_t *totalsize,
-                         size_t byteStreamSizeOffset) {
+                         size_t *byteStreamSizeOffset) {
   struct dirent **directoryEntries;
-  printf("%s\n", path);
   int directoryEntriesAmount =
       scandir(path, &directoryEntries, NULL, alphasort);
   if (directoryEntriesAmount < 0) {
@@ -47,9 +46,6 @@ char *GenerateDataStream(char *path, size_t *totalsize,
       return NULL;
     }
 
-    printf("--------------------------------\n");
-    printf("Processing: %s\nOffset: %zu\n", fullPath, byteStreamSizeOffset);
-
     size_t pathLength = strlen(fullPath) + 1;
     FileHeader *header = malloc(sizeof(FileHeader) + pathLength);
     if (header == NULL) {
@@ -61,19 +57,10 @@ char *GenerateDataStream(char *path, size_t *totalsize,
 
     if (S_ISDIR(fileattr.st_mode)) {
       size_t subStreamSize = 0;
-      size_t offset;
-      if (byteStreamSize < byteStreamSizeOffset) {
-        offset = byteStreamSizeOffset + byteStreamSize;
-      } else {
-        offset = byteStreamSize;
-      }
-      printf("Recursion call for: %s\nCurrent ByteStreamSize: %zu\nPassed "
-             "Offset: %zu",
-             fullPath, subStreamSize, offset);
-      char *subStream = GenerateDataStream(fullPath, &subStreamSize, offset);
+      size_t offset = byteStreamSize + *byteStreamSizeOffset;
+      char *subStream = GenerateDataStream(fullPath, &subStreamSize, &offset);
 
       if (subStream) {
-        printf("===Bytes detected. Writing into buffer===\n");
         char *newByteStream =
             realloc(byteStream, byteStreamSize + subStreamSize);
         if (newByteStream == NULL) {
@@ -86,15 +73,10 @@ char *GenerateDataStream(char *path, size_t *totalsize,
         byteStream = newByteStream;
 
         memmove(byteStream + byteStreamSize, subStream, subStreamSize);
-        printf("%zu byteStreamSize %zu subStreamSize\n", byteStreamSize,
-               subStreamSize);
         byteStreamSize += subStreamSize;
-        printf("ByteStream update to %zu\n", byteStreamSize);
         free(subStream);
       }
     } else {
-      printf("File call for: %s\n", fullPath);
-      printf("Current ByteStream location: %zu\n", byteStreamSize);
       FILE *file = fopen(fullPath, "rb");
       if (!file) {
         perror("fopen");
@@ -122,17 +104,9 @@ char *GenerateDataStream(char *path, size_t *totalsize,
       strcpy(header->filename, filename);
       strcpy(header->filepath, fullPath);
       header->headerSize = sizeof(FileHeader) + pathLength;
-      header->fileOffset =
-          byteStreamSize + header->headerSize + fileSize + byteStreamSizeOffset;
+      header->fileOffset = byteStreamSize + header->headerSize + fileSize +
+                           *byteStreamSizeOffset;
 
-      printf("Mode: %o, Filename: %s, Filepath: %s, Header Size: %i, File "
-             "Next File Location: %i FileSize %zu Used Offset: %zu\n",
-             header->mode, header->filename, header->filepath,
-             header->headerSize, header->fileOffset, fileSize,
-             byteStreamSizeOffset);
-
-      printf("byteStreamSize: %zu Header Size: %i\n", byteStreamSize,
-             header->headerSize);
       char *newByteStream =
           realloc(byteStream, byteStreamSize + header->headerSize);
       if (newByteStream == NULL) {
@@ -145,12 +119,9 @@ char *GenerateDataStream(char *path, size_t *totalsize,
         return NULL;
       }
       byteStream = newByteStream;
-      printf("byteStreamSize: %zu Header Size: %i\n", byteStreamSize,
-             header->headerSize);
       memmove(byteStream + byteStreamSize, header, header->headerSize);
       printf("Writing header to %zu\n", byteStreamSize);
       byteStreamSize += header->headerSize;
-      printf("ByteStream update to %zu\n", byteStreamSize);
 
       free(header);
 
@@ -178,16 +149,13 @@ char *GenerateDataStream(char *path, size_t *totalsize,
       byteStream = newByteFileStream;
 
       memmove(byteStream + byteStreamSize, fileContent, fileSize);
-      printf("Writing body to %zu\n", byteStreamSize);
       byteStreamSize += fileSize;
-      printf("ByteStream update to %zu\n", byteStreamSize);
 
       free(fileContent);
     }
     free(fullPath);
     free(directoryEntries[i]);
     *totalsize = byteStreamSize;
-    printf("Total size was expanded to: %zu\n", *totalsize);
   }
 
   free(directoryEntries);

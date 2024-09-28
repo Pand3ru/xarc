@@ -8,19 +8,17 @@
 
 void TestGenerateDataStream() {
   size_t size = 0;
-  char *byteStream = GenerateDataStream(".", &size, 0);
+  size_t offset = 0;
+  char *byteStream = GenerateDataStream(".", &size, &offset);
 
-  // Verify the byteStream was generated successfully
   assert(byteStream != NULL);
 
-  size_t currentOffset = 0; // To track the current position in the byte stream
+  size_t currentOffset = 0;
 
   while (currentOffset < size) {
     printf("Reading at: %zu\n", currentOffset);
-    // Read the header at the current position
     FileHeader *header = (FileHeader *)(byteStream + currentOffset);
 
-    // Check that the header and filename are valid
     assert(header->filename != NULL);
 
     printf(
@@ -28,7 +26,6 @@ void TestGenerateDataStream() {
         header->filename, header->fileOffset, header->mode, currentOffset,
         header->filepath);
 
-    // Ensure that the fileOffset is greater than the current offset
     assert(header->fileOffset > currentOffset);
     currentOffset = header->fileOffset;
   }
@@ -38,7 +35,6 @@ void TestGenerateDataStream() {
 void printBytesAsHex(const char *byteStream, size_t size) {
   for (size_t i = 0; i < size; i++) {
     if (i % 16 == 0) {
-      // Print the current offset before the next 16 bytes
       printf("\nOffset %04zu: ", i);
     }
     printf("%c ", (unsigned char)byteStream[i]);
@@ -46,12 +42,11 @@ void printBytesAsHex(const char *byteStream, size_t size) {
   printf("\n");
 }
 void printStructBytes(void *ptr, size_t size) {
-  unsigned char *bytePtr =
-      (unsigned char *)ptr; // Treat the struct as a byte array
+  unsigned char *bytePtr = (unsigned char *)ptr;
 
   printf("==========\nPrinting Struct Bytes: \n");
   for (size_t i = 0; i < size; i++) {
-    printf("%02X ", bytePtr[i]); // Print each byte as hexadecimal
+    printf("%02X ", bytePtr[i]);
   }
   printf("\n==========\n");
 }
