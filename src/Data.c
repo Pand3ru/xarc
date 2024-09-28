@@ -161,3 +161,6 @@ char *GenerateDataStream(char *path, size_t *totalsize,
   free(directoryEntries);
   return byteStream;
 }
+
+// Should probably return a sha256 of the entire directory so
+void RecreateFromDataStream(char *byteStream, char *destPath) {}
