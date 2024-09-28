@@ -120,7 +120,6 @@ char *GenerateDataStream(char *path, size_t *totalsize,
       }
       byteStream = newByteStream;
       memmove(byteStream + byteStreamSize, header, header->headerSize);
-      printf("Writing header to %zu\n", byteStreamSize);
       byteStreamSize += header->headerSize;
 
       free(header);
