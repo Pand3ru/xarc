@@ -25,7 +25,7 @@ void TestGenerateDataStream() {
     assert(header->filename != NULL);
 
     printf(
-        "Processing file: %s, Offset: %d, Mode: %d iteration: %zu Path: %s\n",
+        "Processing file: %s, Offset: %d, Mode: %o iteration: %zu Path: %s\n",
         header->filename, header->fileOffset, header->mode, currentOffset,
         header->filepath);
 

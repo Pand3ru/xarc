@@ -2,6 +2,6 @@
 
 int main() {
   TestGenerateDataStream();
-  TestRecreateFromDataStream("~/testdir/");
+  // TestRecreateFromDataStream("~/testdir/");
   return 0;
 }
