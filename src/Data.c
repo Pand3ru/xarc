@@ -99,8 +99,7 @@ char *GenerateDataStream(char *path, size_t *totalsize,
         return NULL;
       }
 
-      header->fuck = 0xFF;
-      header->mode = fileattr.st_mode;
+      header->mode = fileattr.st_mode & 0x0FFF;
       strcpy(header->filename, filename);
       strcpy(header->filepath, fullPath);
       header->headerSize = sizeof(FileHeader) + pathLength;
@@ -120,6 +119,7 @@ char *GenerateDataStream(char *path, size_t *totalsize,
       }
       byteStream = newByteStream;
       memmove(byteStream + byteStreamSize, header, header->headerSize);
+      printf("Writing header to %zu\n", byteStreamSize);
       byteStreamSize += header->headerSize;
 
       free(header);

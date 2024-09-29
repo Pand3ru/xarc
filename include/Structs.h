@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 typedef struct {
-  uint8_t fuck;
   uint32_t headerSize;
   uint32_t mode;
   uint32_t fileOffset;
