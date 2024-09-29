@@ -12,33 +12,24 @@ void TestGenerateDataStream() {
   size_t size = 0;
   size_t offset = 0;
   char *byteStream = GenerateDataStream(".", &size, &offset);
-  //  printBytesAsHex(byteStream, size);
 
   assert(byteStream != NULL);
 
   size_t currentOffset = 0;
 
   while (currentOffset < size) {
-    printf("Reading at: %zu\n", currentOffset);
     FileHeader *header = (FileHeader *)(byteStream + currentOffset);
 
     assert(header->filename != NULL);
-
-    printf(
-        "Processing file: %s, Offset: %d, Mode: %o iteration: %zu Path: %s\n",
-        header->filename, header->fileOffset, header->mode, currentOffset,
-        header->filepath);
-
     assert(header->fileOffset > currentOffset);
     currentOffset = header->fileOffset;
   }
-  printf("Test passed successfully!\n");
+  printf("TestGenerateDataStream: passed\n");
 }
 
 void printBytesAsHex(const char *byteStream, size_t size) {
   for (size_t i = 0; i < size; i++) {
     if (i % 16 == 0) {
-      // printf("\nOffset %04zu: ", i);
     }
     printf("%02b", (unsigned char)byteStream[i]);
   }
@@ -54,6 +45,16 @@ void printStructBytes(void *ptr, size_t size) {
   printf("\n==========\n");
 }
 
+void TestCleanUpIfExtractionFails(char *destPath) {
+  mkdir(destPath, 0755);
+  if (CleanUpIfExtractionFails(destPath) != 0) {
+    struct stat dest_fileattr;
+    assert(stat(destPath, &dest_fileattr) >= 0);
+  } else {
+    printf("Cleanup failed due to different reasons. Test invalid\n");
+  }
+  printf("TestCleanUp: Passed\n");
+}
 void TestRecreateFromDataStream(char *destPath) {
   // Retrieve DataStream
   // Call function
@@ -75,7 +76,7 @@ void TestRecreateFromDataStream(char *destPath) {
     modDestPath[destPathLen - 1] = '\0';
   }
 
-  RecreateFromDataStream(byteStream, destPath);
+  RecreateFromDataStream(byteStream, destPath, size);
 
   size_t currentOffset = 0;
 
@@ -111,5 +112,5 @@ void TestRecreateFromDataStream(char *destPath) {
     assert(header->fileOffset > currentOffset);
     currentOffset = header->fileOffset;
   }
-  printf("Test passed successfully!\n");
+  printf("TestRecreateFromDataStream: passed\n");
 }

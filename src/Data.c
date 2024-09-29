@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "../include/Structs.h"
 
@@ -119,7 +120,6 @@ char *GenerateDataStream(char *path, size_t *totalsize,
       }
       byteStream = newByteStream;
       memmove(byteStream + byteStreamSize, header, header->headerSize);
-      printf("Writing header to %zu\n", byteStreamSize);
       byteStreamSize += header->headerSize;
 
       free(header);
@@ -161,5 +161,95 @@ char *GenerateDataStream(char *path, size_t *totalsize,
   return byteStream;
 }
 
+int CreateDirectories(const char *path) {
+  char tmp[256];
+  char *p = NULL;
+  size_t len;
+  mode_t mode = 0755;
+
+  snprintf(tmp, sizeof(tmp), "%s", path);
+  len = strlen(tmp);
+
+  p = strrchr(tmp, '/');
+  if (p != NULL) {
+    *p = 0;
+  } else {
+    return 0;
+  }
+
+  for (p = tmp + 1; *p; p++) {
+    if (*p == '/') {
+      *p = 0;
+      mkdir(tmp, mode);
+      *p = '/';
+    }
+  }
+  return mkdir(tmp, mode);
+}
+
+int CleanUpIfExtractionFails(char *destPath) {
+  struct dirent **directoryEntries;
+  int directoryEntriesAmount =
+      scandir(destPath, &directoryEntries, NULL, alphasort);
+  if (directoryEntriesAmount < 0) {
+    printf("%s\n", destPath);
+    perror("scandir");
+    return 0;
+  }
+
+  for (int i = 0; i < directoryEntriesAmount; i++) {
+    char *filename = directoryEntries[i]->d_name;
+
+    if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
+      free(directoryEntries[i]);
+      continue;
+    }
+
+    size_t fullPathSize = strlen(destPath) + strlen(filename) + 2;
+    char *fullPath = malloc(fullPathSize);
+    if (fullPath == NULL) {
+      perror("Unable to allocate memory for fullPath");
+      free(directoryEntries);
+      return 0;
+    }
+    snprintf(fullPath, fullPathSize, "%s/%s", destPath, filename);
+
+    struct stat fileattr;
+
+    if (stat(fullPath, &fileattr) < 0) {
+      perror("stat");
+      free(fullPath);
+      free(directoryEntries);
+      return 0;
+    }
+
+    if (S_ISDIR(fileattr.st_mode)) {
+      CleanUpIfExtractionFails(fullPath);
+      rmdir(fullPath);
+    } else {
+      remove(fullPath);
+    }
+  }
+  return 1;
+}
+
 // Should probably return a sha256 of the entire directory so
-void RecreateFromDataStream(char *byteStream, char *destPath) {}
+void RecreateFromDataStream(char *byteStream, char *destPath,
+                            size_t byteStreamSize) {
+  // loop over bytestreamsize
+  // serialize header
+  // create file with metadata retrieved from header
+  // offset += headersize
+  // write from offset to fileoffset into file? Idk if I need to loop there
+  // offset = fileoffset
+
+  size_t current_byte = 0;
+
+  while (current_byte < byteStreamSize) {
+    FileHeader *header = (FileHeader *)(byteStreamSize + byteStreamSize);
+    if (CreateDirectories(header->filepath) == 0) {
+      printf("Error creating directory for %s\n", header->filename);
+      continue;
+    }
+  }
+}
