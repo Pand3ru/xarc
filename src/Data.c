@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -164,11 +165,9 @@ char *GenerateDataStream(char *path, size_t *totalsize,
 int CreateDirectories(const char *path) {
   char tmp[256];
   char *p = NULL;
-  size_t len;
   mode_t mode = 0755;
 
   snprintf(tmp, sizeof(tmp), "%s", path);
-  len = strlen(tmp);
 
   p = strrchr(tmp, '/');
   if (p != NULL) {
@@ -242,23 +241,89 @@ int CleanUpIfExtractionFails(char *destPath) {
   return 1;
 }
 
-// Should probably return a sha256 of the entire directory so
-void RecreateFromDataStream(char *byteStream, char *destPath,
-                            size_t byteStreamSize) {
+int CreateFileAndWriteContent(FileHeader *header, char *byteStream,
+                              size_t offset, size_t byteStreamSize,
+                              char *fullPath) {
+  int file = open(fullPath, O_WRONLY | O_CREAT | O_TRUNC, header->mode);
+  if (file == -1) {
+    perror("File creation");
+    return -1;
+  }
+  ssize_t bytesWritten =
+      write(file, byteStream + offset + header->headerSize,
+            byteStreamSize - (byteStreamSize - header->fileOffset) - offset -
+                header->headerSize); /* ;.................;
+                                           o hS    fO     bSs */
+  if (bytesWritten == -1) {
+    perror("Error writing to file");
+    return -1;
+  }
+  return 1;
+}
+
+char *normalizePath(char *basePath, char *relativePath) {
+  char *normalizedPath = malloc(strlen(basePath) + strlen(relativePath) + 2);
+  if (normalizedPath == NULL) {
+    perror("malloc");
+    return NULL;
+  }
+  char *relativePath_mutable = strdup(relativePath);
+  char *basePath_mutable = strdup(basePath);
+
+  strcpy(normalizedPath, basePath_mutable);
+
+  char *token = strtok(relativePath_mutable, "/");
+  while (token) {
+    if (strcmp(token, ".") == 0) {
+      token = strtok(NULL, "/");
+      continue;
+    } else if (strcmp(token, "..") == 0) {
+      char *lastSlash = strrchr(normalizedPath, '/');
+      if (lastSlash) {
+        *lastSlash = '\0';
+      }
+      token = strtok(NULL, "/");
+      continue;
+    }
+
+    strcat(normalizedPath, "/");
+    strcat(normalizedPath, token);
+    token = strtok(NULL, "/");
+  }
+
+  return normalizedPath;
+}
+
+// DestPath should not end on a trailing /
+int RecreateFromDataStream(char *byteStream, char *destPath,
+                           size_t byteStreamSize) {
   // loop over bytestreamsize
   // serialize header
   // create file with metadata retrieved from header
   // offset += headersize
   // write from offset to fileoffset into file? Idk if I need to loop there
   // offset = fileoffset
+  //
+  // /home/panderu/folder
+  // ../../xarc/sdaf/asdf/sadf
 
   size_t current_byte = 0;
 
   while (current_byte < byteStreamSize) {
-    FileHeader *header = (FileHeader *)(byteStreamSize + byteStreamSize);
-    if (CreateDirectories(header->filepath) == 0) {
-      printf("Error creating directory for %s\n", header->filename);
-      continue;
+    FileHeader *header = (FileHeader *)(byteStream + current_byte);
+    char *fullPath = normalizePath(destPath, header->filepath);
+    if (fullPath == NULL) {
+      return -1;
     }
+    if (CreateDirectories(fullPath) == 0) {
+      printf("Error creating directory for %s\n", header->filename);
+      return -1;
+    }
+    if (CreateFileAndWriteContent(header, byteStream, current_byte,
+                                  byteStreamSize, fullPath) == -1) {
+      return -1;
+    }
+    current_byte = header->fileOffset;
   }
+  return 1;
 }

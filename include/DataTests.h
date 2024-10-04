@@ -7,4 +7,5 @@ void printStructBytes(void *ptr, size_t size);
 void TestRecreateFromDataStream(char *destPath);
 void TestCleanUpIfExtractionFails(char *destPath);
 void TestCreateDirectories(char *filePath);
+void TestNormalizePath();
 #endif
