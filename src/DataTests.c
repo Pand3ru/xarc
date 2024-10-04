@@ -47,7 +47,8 @@ void printStructBytes(void *ptr, size_t size) {
 
 void TestCleanUpIfExtractionFails(char *destPath) {
   mkdir(destPath, 0755);
-  if (CleanUpIfExtractionFails(destPath) != 0) {
+  int err = CleanUpIfExtractionFails(destPath);
+  if (err != 0) {
     struct stat dest_fileattr;
     assert(stat(destPath, &dest_fileattr) >= 0);
   } else {
@@ -113,4 +114,21 @@ void TestRecreateFromDataStream(char *destPath) {
     currentOffset = header->fileOffset;
   }
   printf("TestRecreateFromDataStream: passed\n");
+}
+
+void TestCreateDirectories(char *filePath) {
+  char *filePath_mutable = strdup(filePath);
+  char *res = strrchr(filePath_mutable, '/');
+  if (res != NULL && res != filePath_mutable) {
+    int loc = res - filePath_mutable;
+    filePath_mutable[loc] = '\0';
+  }
+  if (CreateDirectories(filePath) != -1) {
+    struct stat fileattr;
+    assert(stat(filePath_mutable, &fileattr) >= 0);
+  } else {
+    printf("CreateDirectories Failed\n");
+    return;
+  }
+  printf("CreateDirectories: Passed\n");
 }

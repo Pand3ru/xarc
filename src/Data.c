@@ -174,7 +174,7 @@ int CreateDirectories(const char *path) {
   if (p != NULL) {
     *p = 0;
   } else {
-    return 0;
+    return -1;
   }
 
   for (p = tmp + 1; *p; p++) {
@@ -229,6 +229,15 @@ int CleanUpIfExtractionFails(char *destPath) {
     } else {
       remove(fullPath);
     }
+  }
+  struct stat fileattr;
+  if (stat(destPath, &fileattr) < 0) {
+    return 0;
+  }
+  if (S_ISDIR(fileattr.st_mode)) {
+    rmdir(destPath);
+  } else {
+    remove(destPath);
   }
   return 1;
 }
