@@ -314,6 +314,10 @@ char *normalizePath(char *basePath, char *relativePath) {
 // DestPath should end on a trailing /
 int RecreateFromDataStream(char *byteStream, char *destPath,
                            size_t byteStreamSize) {
+  struct stat fileattr;
+  if (stat(destPath, &fileattr) < 0) {
+    return -1;
+  }
   // loop over bytestreamsize
   // serialize header
   // create file with metadata retrieved from header
