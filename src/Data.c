@@ -1,4 +1,6 @@
+#include <assert.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -177,13 +179,23 @@ int CreateDirectories(const char *path) {
   }
 
   for (p = tmp + 1; *p; p++) {
+    printf("%s\n", p);
     if (*p == '/') {
       *p = 0;
+      printf("if: %s\n", tmp);
       mkdir(tmp, mode);
       *p = '/';
     }
   }
-  return mkdir(tmp, mode);
+  printf("%s\n", tmp);
+  mkdir(tmp, mode);
+  DIR *dir = opendir(tmp);
+  if (dir) {
+    closedir(dir);
+    return 0;
+  } else {
+    return -1;
+  }
 }
 
 int CleanUpIfExtractionFails(char *destPath) {
@@ -191,7 +203,7 @@ int CleanUpIfExtractionFails(char *destPath) {
   int directoryEntriesAmount =
       scandir(destPath, &directoryEntries, NULL, alphasort);
   if (directoryEntriesAmount < 0) {
-    printf("%s\n", destPath);
+    printf("error on cleanup: %s\n", destPath);
     perror("scandir");
     return 0;
   }
@@ -254,10 +266,12 @@ int CreateFileAndWriteContent(FileHeader *header, char *byteStream,
             byteStreamSize - (byteStreamSize - header->fileOffset) - offset -
                 header->headerSize); /* ;.................;
                                            o hS    fO     bSs */
+  printf("created %s\n", fullPath);
   if (bytesWritten == -1) {
     perror("Error writing to file");
     return -1;
   }
+  printf("Wrote content for: %s\n", fullPath);
   return 1;
 }
 
@@ -271,6 +285,8 @@ char *normalizePath(char *basePath, char *relativePath) {
   char *basePath_mutable = strdup(basePath);
 
   strcpy(normalizedPath, basePath_mutable);
+  printf("BasePath: %s\nRelativePath: %s\n", basePath_mutable,
+         relativePath_mutable);
 
   char *token = strtok(relativePath_mutable, "/");
   while (token) {
@@ -291,10 +307,11 @@ char *normalizePath(char *basePath, char *relativePath) {
     token = strtok(NULL, "/");
   }
 
+  printf("normalizedPath: %s\n", normalizedPath);
   return normalizedPath;
 }
 
-// DestPath should not end on a trailing /
+// DestPath should end on a trailing /
 int RecreateFromDataStream(char *byteStream, char *destPath,
                            size_t byteStreamSize) {
   // loop over bytestreamsize
@@ -310,19 +327,16 @@ int RecreateFromDataStream(char *byteStream, char *destPath,
   size_t current_byte = 0;
 
   while (current_byte < byteStreamSize) {
+    printf("-------------------------\n");
     FileHeader *header = (FileHeader *)(byteStream + current_byte);
     char *fullPath = normalizePath(destPath, header->filepath);
     if (fullPath == NULL) {
       return -1;
     }
-    if (CreateDirectories(fullPath) == 0) {
-      printf("Error creating directory for %s\n", header->filename);
-      return -1;
-    }
-    if (CreateFileAndWriteContent(header, byteStream, current_byte,
-                                  byteStreamSize, fullPath) == -1) {
-      return -1;
-    }
+    printf("Creating directory for %s\n", fullPath);
+    assert(CreateDirectories(fullPath) != -1);
+    assert(CreateFileAndWriteContent(header, byteStream, current_byte,
+                                     byteStreamSize, fullPath) != -1);
     current_byte = header->fileOffset;
   }
   return 1;

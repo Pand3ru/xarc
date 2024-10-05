@@ -64,7 +64,7 @@ void TestRecreateFromDataStream(char *destPath) {
   // equal/maybe skip path all together.
   size_t size = 0;
   size_t offset = 0;
-  char *byteStream = GenerateDataStream("../", &size, &offset); // edge case
+  char *byteStream = GenerateDataStream("..", &size, &offset); // edge case
 
   char *modDestPath = strdup(destPath);
   if (modDestPath == NULL) {
@@ -102,10 +102,10 @@ void TestRecreateFromDataStream(char *destPath) {
     printf("Fullpath in test%s\n", fullPath);
 
     struct stat orig_fileattr;
-    assert(stat(header->filepath, &orig_fileattr) < 0);
+    assert(stat(header->filepath, &orig_fileattr) >= 0);
 
     struct stat dest_fileattr;
-    assert(stat(header->filepath, &dest_fileattr) < 0);
+    assert(stat(header->filepath, &dest_fileattr) >= 0);
 
     assert(orig_fileattr.st_mode == dest_fileattr.st_mode);
     assert(orig_fileattr.st_size == dest_fileattr.st_size);
@@ -137,5 +137,4 @@ void TestNormalizePath() {
   char *new = normalizePath("/home/panderu/Projects",
                             "../../../../../../../home/panderu/Desktop");
   assert(strcmp(new, "/home/panderu/Projects/Desktop"));
-  printf("normalizePath: passed\n");
 }
