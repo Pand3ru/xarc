@@ -6,7 +6,7 @@
 typedef struct {
   uint32_t headerSize;
   uint32_t mode;
-  uint32_t fileOffset;
+  uint64_t fileOffset;
   char filename[255 * sizeof(char)];
   char filepath[];
 } FileHeader;

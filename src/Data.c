@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <dirent.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -179,15 +178,12 @@ int CreateDirectories(const char *path) {
   }
 
   for (p = tmp + 1; *p; p++) {
-    printf("%s\n", p);
     if (*p == '/') {
       *p = 0;
-      printf("if: %s\n", tmp);
       mkdir(tmp, mode);
       *p = '/';
     }
   }
-  printf("%s\n", tmp);
   mkdir(tmp, mode);
   DIR *dir = opendir(tmp);
   if (dir) {
@@ -203,7 +199,6 @@ int CleanUpIfExtractionFails(char *destPath) {
   int directoryEntriesAmount =
       scandir(destPath, &directoryEntries, NULL, alphasort);
   if (directoryEntriesAmount < 0) {
-    printf("error on cleanup: %s\n", destPath);
     perror("scandir");
     return 0;
   }
@@ -318,16 +313,6 @@ int RecreateFromDataStream(char *byteStream, char *destPath,
   if (stat(destPath, &fileattr) < 0) {
     return -1;
   }
-  // loop over bytestreamsize
-  // serialize header
-  // create file with metadata retrieved from header
-  // offset += headersize
-  // write from offset to fileoffset into file? Idk if I need to loop there
-  // offset = fileoffset
-  //
-  // /home/panderu/folder
-  // ../../xarc/sdaf/asdf/sadf
-
   size_t current_byte = 0;
 
   while (current_byte < byteStreamSize) {
