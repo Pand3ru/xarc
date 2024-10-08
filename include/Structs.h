@@ -4,11 +4,11 @@
 #include <stdint.h>
 
 typedef struct {
-  uint32_t headerSize;
+  uint32_t header_size;
   uint32_t mode;
-  uint64_t fileOffset;
-  char filename[255 * sizeof(char)];
-  char filepath[];
+  uint64_t file_offset;
+  char file_name[255 * sizeof(char)];
+  char file_path[];
 } FileHeader;
 
 #endif

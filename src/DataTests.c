@@ -20,9 +20,9 @@ void TestGenerateDataStream() {
   while (currentOffset < size) {
     FileHeader *header = (FileHeader *)(byteStream + currentOffset);
 
-    assert(header->filename != NULL);
-    assert(header->fileOffset > currentOffset);
-    currentOffset = header->fileOffset;
+    assert(header->file_name != NULL);
+    assert(header->file_offset > currentOffset);
+    currentOffset = header->file_offset;
   }
   printf("TestGenerateDataStream: passed\n");
 }
@@ -64,7 +64,7 @@ void TestRecreateFromDataStream(char *destPath) {
   // equal/maybe skip path all together.
   size_t size = 0;
   size_t offset = 0;
-  char *byteStream = GenerateDataStream("..", &size, &offset); // edge case
+  char *byteStream = GenerateDataStream("..", &size, &offset);
 
   char *modDestPath = strdup(destPath);
   if (modDestPath == NULL) {
@@ -85,47 +85,47 @@ void TestRecreateFromDataStream(char *destPath) {
     printf("Reading at: %zu\n", currentOffset);
     FileHeader *header = (FileHeader *)(byteStream + currentOffset);
 
-    assert(header->filename != NULL);
+    assert(header->file_name != NULL);
 
-    char *filename = header->filename;
-    char *orig_filepath = header->filepath + 2; // should delete the leading
-                                                // './'
+    char *file_name = header->file_name;
+    char *orig_file_path = header->file_path + 2; // should delete the leading
+                                                  // './'
     size_t fullPathSize =
-        strlen(orig_filepath) + strlen(filename) + strlen(destPath);
+        strlen(orig_file_path) + strlen(file_name) + strlen(destPath);
     char *fullPath = malloc(fullPathSize);
     if (fullPath == NULL) {
       perror("Unable to allocate memory for fullPath");
       return;
     }
 
-    snprintf(fullPath, fullPathSize, "%s%s", modDestPath, orig_filepath);
+    snprintf(fullPath, fullPathSize, "%s%s", modDestPath, orig_file_path);
     printf("Fullpath in test%s\n", fullPath);
 
     struct stat orig_fileattr;
-    assert(stat(header->filepath, &orig_fileattr) >= 0);
+    assert(stat(header->file_path, &orig_fileattr) >= 0);
 
     struct stat dest_fileattr;
-    assert(stat(header->filepath, &dest_fileattr) >= 0);
+    assert(stat(header->file_path, &dest_fileattr) >= 0);
 
     assert(orig_fileattr.st_mode == dest_fileattr.st_mode);
     assert(orig_fileattr.st_size == dest_fileattr.st_size);
 
-    assert(header->fileOffset > currentOffset);
-    currentOffset = header->fileOffset;
+    assert(header->file_offset > currentOffset);
+    currentOffset = header->file_offset;
   }
   printf("TestRecreateFromDataStream: passed\n");
 }
 
-void TestCreateDirectories(char *filePath) {
-  char *filePath_mutable = strdup(filePath);
-  char *res = strrchr(filePath_mutable, '/');
-  if (res != NULL && res != filePath_mutable) {
-    int loc = res - filePath_mutable;
-    filePath_mutable[loc] = '\0';
+void TestCreateDirectories(char *file_path) {
+  char *file_path_mutable = strdup(file_path);
+  char *res = strrchr(file_path_mutable, '/');
+  if (res != NULL && res != file_path_mutable) {
+    int loc = res - file_path_mutable;
+    file_path_mutable[loc] = '\0';
   }
-  if (CreateDirectories(filePath) != -1) {
+  if (CreateDirectories(file_path) != -1) {
     struct stat fileattr;
-    assert(stat(filePath_mutable, &fileattr) >= 0);
+    assert(stat(file_path_mutable, &fileattr) >= 0);
   } else {
     printf("CreateDirectories Failed\n");
     return;
